@@ -1,0 +1,9 @@
+[submodule "tf-faster-rcnn"]
+	path = tf-faster-rcnn
+	url = https://github.com/endernewton/tf-faster-rcnn
+[submodule "faster_rcnn"]
+	path = faster_rcnn
+	url = https://github.com/ShaoqingRen/faster_rcnn
+[submodule "Faster-RCNN_TF"]
+	path = Faster-RCNN_TF
+	url = https://github.com/smallcorgi/Faster-RCNN_TF
