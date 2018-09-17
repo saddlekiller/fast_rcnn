@@ -31,6 +31,18 @@ def save_npy(url, arr, show_info=False):
     if show_info:
         logger.info('Saving npy to \'{}\''.format(url))
 
+def load_npy(url, show_info=False):
+    data = np.load(url)
+    if show_info:
+        logger.info('Loading npy from \'{}\''.format(url))
+    return data
+
+def load_txt(url, show_info=False):
+    data = [i.replace('\n', '') for i in open(url).readlines()]
+    if show_info:
+        logger.info('Loading text from \'{}\''.format(url))
+    return data
+
 def load_xml(url, show_info=False):
     xml = ET.parse(url)
     root = xml.getroot()

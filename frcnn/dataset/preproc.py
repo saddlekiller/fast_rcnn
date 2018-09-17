@@ -22,6 +22,7 @@ class VOC2007Preprocess():
         self.data_dir = hparams.data_dir
         self.image_dir = hparams.image_dir
         self.metadata = hparams.metadata
+        self.objects = hparams.objects
         os.makedirs(self.data_dir, exist_ok=True)
         os.makedirs(self.image_dir, exist_ok=True)
 
@@ -39,11 +40,17 @@ class VOC2007Preprocess():
         for url in xml_urls:
             meta.append(executor.submit(partial(self._gen_meta, self.annotations_dir + '/' + url)))
         metas = [future.result() for future in tqdm(meta) if future.result() is not None]
+        labels = set()
         with open(self.metadata, 'w') as f:
             for m in metas:
                 for mi in m:
-                   f.write(mi + '\n')
+                    labels.add(mi.split('|')[-2])
+                    f.write(mi + '\n')
         logger.info('meta data has been written in file \'{}\''.format(self.metadata))
+        with open(self.objects, 'w') as f:
+            for i in list(labels):
+                f.write(i + '\n')
+        logger.info('labels have been written in file \'{}\''.format(self.objects))
         return metas
 
     def gen_image(self):
@@ -72,15 +79,16 @@ class VOC2007Preprocess():
         return image_name, image
 
 def get_arguments():
-    description = \
-        '     ______  _____      ____   _______             ____    ____    _   __  _   __\n' + \
-        '    / ____/ / __  \    / __ \ /__  __/            / __ \  / __ \  / | / / / | / /\n' + \
-        '   / /___  / /__/ /   / / /_/   / /   ________   / /_/ / / / /_/ /  |/ / /  |/ / \n' + \
-        '  / ____/ / ___  / _  \ \      / /   /_______/  / _   / / / __  /     / /     /  \n' + \
-        ' / /     / /  / / / /_/ /     / /              / / / / / /_/ / / /|  / / /|  /   \n' + \
-        '/_/     /_/  /_/  \____/     /_/              /_/  \_\ \____/ /_/ |_/ /_/ |_/    \n' + \
-        '     '
-    print(description)
+    logger.hline()
+    logger.info('         ___              __                                     ')
+    logger.info('        / __\            / /                                     ')
+    logger.info('      _/ / ____   ___  _/ / ___   ____ ____ __   _   __ _   __   ')
+    logger.info('     /  _// __ \ / _ \/  _// _ \ / __// __//  \ / | / // | / /   ')
+    logger.info('     / / / / / / \ \\\\// / / ___// /  / /  / /_//  |/ //  |/ /    ')
+    logger.info('    / / / /_/ //\/ / / /_/ /__ / /  / /  / /_ / /|  // /|  /     ')
+    logger.info('   /_/  \___,/ \__/  \__/\___//_/  /_/   \__//_/ |_//_/ |_/      ')
+    logger.hline()
+
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--hparams', type=str, default='train_preproc', help='')
     return parser.parse_args()
@@ -96,6 +104,14 @@ if __name__ == '__main__':
     main()
 
 
+#
 
+#
+#
+#
+#
+#
+#
+#
 
 
