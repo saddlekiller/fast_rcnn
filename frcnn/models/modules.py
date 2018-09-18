@@ -17,3 +17,27 @@ class RPN():
     def __call__(self, inputs):
         pass
 
+class VGG16():
+
+    def __init__(self):
+        pass
+
+    def __call__(self, inputs):
+        pass
+
+class VGG19():
+
+    def __init__(self):
+        pass
+
+    def __call__(self, inputs):
+        pass
+
+class ResNet():
+
+    def __init__(self):
+        pass
+
+    def __call__(self, inputs):
+        pass
+
