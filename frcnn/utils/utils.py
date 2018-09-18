@@ -4,6 +4,7 @@ import numpy as np
 import logging
 from frcnn.utils.log import logger
 import xml.etree.cElementTree as ET
+from tensorflow.python.tools import inspect_checkpoint as chkp
 
 logger = logging.getLogger('logger')
 
@@ -115,3 +116,9 @@ def annotate_image(image, bbox):
         ax.add_patch(patches.Rectangle((b[0], b[1]), b[2], b[3], linewidth=1, facecolor='none', edgecolor='r'))
     ax.set_axis_off()
     return f
+
+def print_model(ckpt_path, tensor_name=None, all_tensors=False, all_tensor_names=True):
+    chkp.print_tensors_in_checkpoint_file(file_name=ckpt_path,
+                                          tensor_name=tensor_name,
+                                          all_tensors=all_tensors,
+                                          all_tensor_names=all_tensor_names)
