@@ -24,6 +24,9 @@ class VOCFeeder():
         self._load_meta()
 
     def _prepare_batch(self, batch_size):
+        if batch_size != 1:
+            batch_size = 1
+            logger.warning('batch size > 1 is not supported yet, reseted to 1')
         meta = self._sampling(batch_size)
         batch_image = [None] * batch_size
         batch_label = [None] * batch_size
@@ -35,7 +38,11 @@ class VOCFeeder():
             batch_label[i] = self.objectset.index(label)
             batch_bndbox[i] = bndbox
             batch_shape[i] = shape
-        
+        batch_image = np.array(batch_image)
+        batch_label = np.array(batch_label)
+        batch_bndbox = np.array(batch_bndbox)
+        batch_shape = np.array(batch_shape)
+        return (batch_image, batch_label, batch_bndbox, batch_shape)
 
     def _sampling(self, batch_size):
         return [self.metadata[np.random.randint(0, self.n_samples)] for i in range(batch_size)]
@@ -51,4 +58,4 @@ if __name__ == '__main__':
     #     print(parse_meta(line))
     #     break
     feeder = VOCFeeder(hparams.train_preproc)
-    print(feeder._prepare_batch(2))
+    print([i.shape for i in feeder._prepare_batch(2)])
