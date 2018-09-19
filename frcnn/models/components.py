@@ -92,7 +92,7 @@ class ResNet():
 
 if __name__ == '__main__':
     # print_model('../pretrain/vgg_16.ckpt', all_tensors=True)
-    img = Image.open('../tests/images/timg.jpeg')
+    img = Image.open('../tests/images/n02423022_0.JPEG')
     img = img.resize((224, 224))
     img = np.array(img) / 255
     img = np.expand_dims(img, 0)
