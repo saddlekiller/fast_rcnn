@@ -3,6 +3,7 @@ import numpy as np
 from frcnn.models.modules import *
 from frcnn.utils.utils import *
 from PIL import Image
+from frcnn.dataset.feeder import TinyImageNetFeeder
 
 class SPP():
 
@@ -78,8 +79,8 @@ class VGG16():
         for stack_name, stack_layers in self.layers.items():
             for layer_name, layer in stack_layers.items():
                 x = layer(x)
-        return tf.nn.top_k(tf.squeeze(x, [2, 2]), k = 3)[1]
-
+        # return tf.nn.top_k(tf.squeeze(x, [2, 2]), k = 3)[1]
+        return tf.argmax(tf.squeeze(x, [2, 2]), axis=-1)
 
 class ResNet():
 
@@ -92,16 +93,51 @@ class ResNet():
 
 if __name__ == '__main__':
     # print_model('../pretrain/vgg_16.ckpt', all_tensors=True)
-    img = Image.open('../tests/images/n02423022_0.JPEG')
-    img = img.resize((224, 224))
-    img = np.array(img) / 255
-    img = np.expand_dims(img, 0)
-    print(np.array(img).shape)
+    feeder = TinyImageNetFeeder((224, 224))
+    iter = feeder.run(8)
+    summary = {}
+    label_list = ['NULL']*1000
+    label_value = {}
+    for i in open('../pretrain/imagenet_labels.txt').readlines():
+        temp = i.split()
+        label = temp[0]
+        explanation = ' '.join(temp[1:])
+        label_value[label] = explanation
 
-    with tf.Session() as sess:
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    c = 0
+
+    with tf.Session(config=config) as sess:
         vgg = VGG16()
         vgg.load('../pretrain/vgg_16.ckpt', sess)
-        results = sess.run(vgg(tf.constant(img, dtype=tf.float32)))[0]
-        print(results[0])
-        # print(sess.run(vgg.mean_rgb))
-        # print(sess.run(vgg.global_step))
+        for label, data in iter:
+            placeholder = tf.placeholder(tf.float32, (None, None, None, 3))
+            res = sess.run(vgg(placeholder), feed_dict={placeholder: data})
+            res = np.array(res).reshape(-1)
+            if label not in summary.keys():
+                summary[label] = {}
+            for r in res:
+                if r not in summary[label].keys():
+                    summary[label][r] = 0
+                summary[label][r] += 1
+            c += 1
+            # break
+    for label, value in summary.items():
+        max_n = 0
+        max_r = 0
+        sum_n = 0
+        for res, n in value.items():
+            sum_n += n
+            if n > max_n:
+                max_n = n
+                max_r = res
+        print(label, max_r, max_n / sum_n)
+        label_list[max_r] = ' '.join([label, str(max_n / sum_n), label_value[label]])
+    # print(label_list[669])
+    with open('../pretrain/imagenet_labels_vgg16.txt', 'w') as f:
+        for i in range(1000):
+            f.write(label_list[i] + '\n')
+
+        # results = sess.run(vgg(tf.constant(img, dtype=tf.float32)))[0]
+        # print(results[0])
