@@ -75,7 +75,7 @@ class VGG16():
         saver.restore(sess, ckpt_path)
 
     def __call__(self, inputs):
-        x = inputs - self.mean_rgb / 255
+        x = inputs - self.mean_rgb
         for stack_name, stack_layers in self.layers.items():
             for layer_name, layer in stack_layers.items():
                 x = layer(x)
@@ -104,16 +104,19 @@ if __name__ == '__main__':
         explanation = ' '.join(temp[1:])
         label_value[label] = explanation
 
-    config = tf.ConfigProto()
-    config.gpu_options.allow_growth = True
+    # config = tf.ConfigProto()
+    # config.gpu_options.allow_growth = True
     c = 0
 
-    with tf.Session(config=config) as sess:
-        vgg = VGG16()
+    # with tf.Session(config=config) as sess:
+
+    placeholder = tf.placeholder(tf.float32, (None, None, None, 3))
+    vgg = VGG16()
+    output = vgg(placeholder)
+    with tf.Session() as sess:
         vgg.load('../pretrain/vgg_16.ckpt', sess)
         for label, data in iter:
-            placeholder = tf.placeholder(tf.float32, (None, None, None, 3))
-            res = sess.run(vgg(placeholder), feed_dict={placeholder: data})
+            res = sess.run(output, feed_dict={placeholder: data})
             res = np.array(res).reshape(-1)
             if label not in summary.keys():
                 summary[label] = {}
@@ -122,6 +125,7 @@ if __name__ == '__main__':
                     summary[label][r] = 0
                 summary[label][r] += 1
             c += 1
+            print(label, c)
             # break
     for label, value in summary.items():
         max_n = 0

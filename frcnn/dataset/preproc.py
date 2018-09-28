@@ -78,6 +78,46 @@ class VOC2007Preprocess():
         image_name = self.image_dir + '/' + image_name.replace('.jpg', '.npy')
         return image_name, image
 
+class ILSVRCPreprocess():
+
+    def __init__(self, hparams):
+        self.base_dir = hparams.base_dir
+        self.annotations_dir = hparams.Annotations
+        self.data_dir = hparams.Data
+        self.imagesets = hparams.ImageSets
+        self.metadata = hparams.metadata
+
+    def _process(self):
+        pass
+
+    def _retrieve_urls(self):
+        urls = []
+        for label in os.listdir(self.annotations_dir):
+            for file in os.listdir(self.annotations_dir + '/' + label):
+                url = os.path.join(self.annotations_dir, label, file)
+                # print(url)
+                urls.append(url)
+                # break
+            # break
+        return urls
+
+    def run(self):
+        urls = self._retrieve_urls()
+        for url in urls:
+            meta = self._gen_meta(url)
+            print(url)
+            for m in meta:
+                i = m.split('|')[0]
+                img = load_image(i)
+
+    def _gen_meta(self, url):
+        filename, width, height, depth, obj_infos = parse_object(url)
+        metadata = [None] * len(obj_infos)
+        for i, obj_info in enumerate(obj_infos):
+            metadata[i] = '|'.join([self.data_dir + '/' + filename.split('_')[0] + '/' + filename + '.JPEG', str(width), str(height), str(depth), '|'.join(obj_info)])
+        return metadata
+
+
 def get_arguments():
     logger.hline()
     logger.info('         ___              __                                     ')
@@ -96,8 +136,12 @@ def get_arguments():
 def main():
     args = get_arguments()
     from frcnn.configs.hparams import hparams
+    dataset_name = hparams.dataset.name
     hparams = getattr(hparams, args.hparams)
-    preproc = VOC2007Preprocess(hparams)
+    if dataset_name == 'VOC2007':
+        preproc = VOC2007Preprocess(hparams)
+    else:
+        preproc = ILSVRCPreprocess(hparams)
     preproc.run()
 
 if __name__ == '__main__':

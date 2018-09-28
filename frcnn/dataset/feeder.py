@@ -65,7 +65,7 @@ class TinyImageNetFeeder(object):
     def run(self, batch_size):
         labels = os.listdir(self.train_dir)
         for label in labels:
-            image_dirs = os.listdir(os.path.join(self.train_dir, label, 'images'))[:32]
+            image_dirs = os.listdir(os.path.join(self.train_dir, label, 'images'))
             n_images = len(image_dirs)
             n_batches = n_images // batch_size + 1
             image_dirs = [os.path.join(self.train_dir, label, 'images', i) for i in image_dirs]
@@ -88,7 +88,6 @@ class TinyImageNetFeeder(object):
         if len(img.shape) != 3:
             img = np.expand_dims(img, -1)
             img = np.tile(img, [1, 1, 3])
-        img = np.array(img) / 255
         return img
 
 if __name__ == '__main__':
