@@ -69,7 +69,7 @@ class VOC2007Preprocess():
         filename, width, height, depth, obj_infos = parse_object(url)
         metadata = [None] * len(obj_infos)
         for i, obj_info in enumerate(obj_infos):
-            metadata[i] = '|'.join([self.image_dir + '/' + filename.replace('.jpg', '.npy'), str(width), str(height), str(depth), '|'.join(obj_info)])
+            metadata[i] = '|'.join([self.image_dir + '/' + filename.replace('.jpg', '.npy'), str(height), str(width), str(depth), '|'.join(obj_info)])
         return metadata
 
     def _gen_image(self, url):

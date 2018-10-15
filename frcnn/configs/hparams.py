@@ -4,7 +4,7 @@ import copy
 
 hparams = EasyDict()
 hparams.dataset = EasyDict()
-hparams.dataset.name = 'ILSVRC'
+hparams.dataset.name = 'VOC2007'
 
 if hparams.dataset.name == 'VOC2007':
     hparams.dataset.base_dir = os.environ['VOC2007']

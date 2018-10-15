@@ -43,7 +43,7 @@ class VOCFeeder():
         batch_label = np.array(batch_label)
         batch_bndbox = np.array(batch_bndbox)
         batch_shape = np.array(batch_shape)
-        return (batch_image, batch_label, batch_bndbox, batch_shape)
+        return (batch_image, batch_label, batch_bndbox, batch_shape, [i.split('|')[0] for i in meta])
 
     def _sampling(self, batch_size):
         return [self.metadata[np.random.randint(0, self.n_samples)] for i in range(batch_size)]

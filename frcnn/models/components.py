@@ -3,7 +3,7 @@ import numpy as np
 from frcnn.models.modules import *
 from frcnn.utils.utils import *
 from PIL import Image
-from frcnn.dataset.feeder import TinyImageNetFeeder
+from frcnn.dataset.feeder import TinyImageNetFeeder, VOCFeeder
 
 class SPP():
 
@@ -36,6 +36,7 @@ class VGG16():
         self.stack_denses = [512, 4096, 4096, 1000]
         self.layers = {}
         self.global_step = tf.get_variable(name='global_step', shape=(), dtype=tf.int64)
+        self.layers_names = []
 
         with tf.variable_scope('vgg_16'):
             self.mean_rgb = tf.get_variable(name='mean_rgb', shape=(3), dtype=tf.float32)
@@ -54,33 +55,64 @@ class VGG16():
                             else:
                                 self.layers['stack_conv_{}'.format(i + 1)]['conv_{}'.format(j + 1)] = Conv2D3x3(in_channels=self.stack_filters[i+1],
                                                             out_channels=self.stack_filters[i+1])
+                            self.layers_names.append('stack_conv_{}'.format(i + 1) + '/conv_{}'.format(j + 1))
                             self.layers['stack_conv_{}'.format(i+1)]['relu_{}'.format(j + 1)] = ReluActivation()
                     self.layers['stack_conv_{}'.format(i+1)]['maxpooling'] = MaxPooling2D(pool_size=(2, 2),
                                                                                           strides=(2, 2),
                                                                                           padding='VALID')
+                    self.layers_names.append('stack_conv_{}'.format(i+1) + '/maxpooling')
+
 
             self.layers['stack_dense'] = {}
             with tf.variable_scope('fc6'):
                 self.layers['stack_dense']['dense_6'] = Conv2D7x7(in_channels=512,
                                              out_channels=4096, padding='VALID')
+                self.layers_names.append('stack_dense/dense_6')
             with tf.variable_scope('fc7'):
                 self.layers['stack_dense']['dense_7'] = Conv2D1x1(in_channels=4096,
                                              out_channels=4096)
+                self.layers_names.append('stack_dense/dense_7')
             with tf.variable_scope('fc8'):
                 self.layers['stack_dense']['dense_8'] = Conv2D1x1(in_channels=4096,
                                              out_channels=1000)
+                self.layers_names.append('stack_dense/dense_8')
+        logger.hline()
+        logger.info(' __     __  _____    _____  ')
+        logger.info('| |    / / / ___ \  / ___ \ ')
+        logger.info('| |   / / / /  /_/ / /  /_/ ')
+        logger.info('| |  / / / / ____ / / ____  ')
+        logger.info('| | / / / / /  _// / /  _/  ')
+        logger.info('| |/ / / /__/ / / /__/ /    ')
+        logger.info('|___/  \_____/  \_____/     ')
+        logger.hline()
+        for l in self.layers_names:
+            scope, name = l.split('/')
+            logger.info('{}: {}'.format(l, self.layers[scope][name]))
+        logger.hline()
 
     def load(self, ckpt_path, sess):
         saver = tf.train.Saver()
         saver.restore(sess, ckpt_path)
 
-    def __call__(self, inputs):
+    # def __call__(self, inputs):
+    #     x = inputs - self.mean_rgb
+    #     for stack_name, stack_layers in self.layers.items():
+    #         for layer_name, layer in stack_layers.items():
+    #             x = layer(x)
+    #     return tf.nn.top_k(tf.squeeze(x, [2, 2]), k = 3)[1]
+        # return tf.argmax(tf.squeeze(x, [2, 2]), axis=-1)
+
+    def __call__(self, inputs, output_layer_name):
+        if output_layer_name not in self.layers_names:
+            logger.error('{} not found in VGG-16')
+            raise ValueError
         x = inputs - self.mean_rgb
-        for stack_name, stack_layers in self.layers.items():
-            for layer_name, layer in stack_layers.items():
-                x = layer(x)
-        # return tf.nn.top_k(tf.squeeze(x, [2, 2]), k = 3)[1]
-        return tf.argmax(tf.squeeze(x, [2, 2]), axis=-1)
+        for l in self.layers_names:
+            scope, name = l.split('/')
+            x = self.layers[scope][name](x)
+            if l == output_layer_name:
+                break
+        return x
 
 class ResNet():
 
@@ -91,57 +123,23 @@ class ResNet():
         pass
 
 
+
 if __name__ == '__main__':
-    # print_model('../pretrain/vgg_16.ckpt', all_tensors=True)
-    feeder = TinyImageNetFeeder((224, 224))
-    iter = feeder.run(8)
-    summary = {}
-    label_list = ['NULL']*1000
-    label_value = {}
-    for i in open('../pretrain/imagenet_labels.txt').readlines():
-        temp = i.split()
-        label = temp[0]
-        explanation = ' '.join(temp[1:])
-        label_value[label] = explanation
-
-    # config = tf.ConfigProto()
-    # config.gpu_options.allow_growth = True
-    c = 0
-
-    # with tf.Session(config=config) as sess:
-
+    from frcnn.configs.hparams import hparams
     placeholder = tf.placeholder(tf.float32, (None, None, None, 3))
     vgg = VGG16()
-    output = vgg(placeholder)
-    with tf.Session() as sess:
-        vgg.load('../pretrain/vgg_16.ckpt', sess)
-        for label, data in iter:
-            res = sess.run(output, feed_dict={placeholder: data})
-            res = np.array(res).reshape(-1)
-            if label not in summary.keys():
-                summary[label] = {}
-            for r in res:
-                if r not in summary[label].keys():
-                    summary[label][r] = 0
-                summary[label][r] += 1
-            c += 1
-            print(label, c)
-            # break
-    for label, value in summary.items():
-        max_n = 0
-        max_r = 0
-        sum_n = 0
-        for res, n in value.items():
-            sum_n += n
-            if n > max_n:
-                max_n = n
-                max_r = res
-        print(label, max_r, max_n / sum_n)
-        label_list[max_r] = ' '.join([label, str(max_n / sum_n), label_value[label]])
-    # print(label_list[669])
-    with open('../pretrain/imagenet_labels_vgg16.txt', 'w') as f:
-        for i in range(1000):
-            f.write(label_list[i] + '\n')
+    output = vgg(placeholder, 'stack_conv_5/conv_3')
+    print(output)
+    feeder = VOCFeeder(hparams.train_preproc)
+    # print(data[0].shape)
+    import matplotlib.pyplot as plt
 
-        # results = sess.run(vgg(tf.constant(img, dtype=tf.float32)))[0]
-        # print(results[0])
+    for i in range(10):
+        data = feeder._prepare_batch(1)
+        img = data[0][0]
+        box = data[2]
+        filename = data[-1][0]
+        print(img.shape, box)
+        print(filename)
+        annotate_image(img, box, True, True)
+        plt.show()

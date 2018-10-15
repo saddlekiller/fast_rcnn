@@ -8,9 +8,12 @@ from tensorflow.python.tools import inspect_checkpoint as chkp
 
 logger = logging.getLogger('logger')
 
-def load_image(url, show_info=False):
+def load_image(url, show_info=False, norm = False):
     img = plt.imread(url)
-    img = np.array(img / 255, dtype=np.float32)
+    if norm:
+        img = np.array(img / 255, dtype=np.float32)
+    else:
+        img = np.array(img, dtype=np.float32)
     if show_info:
         logger.info('Loading image from \'{}\''.format(url))
     return img
@@ -89,7 +92,7 @@ def correct_bbox(shape, bbox):
         h = H - y
     return x, y, w, h
 
-def annotate_image(image, bbox):
+def annotate_image(image, bbox, corner = True, norm=False):
     '''
     Annotate image with bbox
     :param image: url or numpy.ndarray or list
@@ -103,6 +106,8 @@ def annotate_image(image, bbox):
             logger.error('Cannot load image !')
             raise IOError
     image = np.array(image)
+    if norm:
+        image /= 255
     bbox = np.array(bbox)
     if len(bbox.shape) != 2 or bbox.shape[1] != 4:
         logger.error('Expect bbox have shape (?, 4) but got {} !'.format(bbox.shape))
@@ -112,7 +117,10 @@ def annotate_image(image, bbox):
     ax = f.add_subplot(111)
     ax.imshow(image)
     for b in bbox:
-        b = correct_bbox(image.shape[:-1], b)
+        if corner:
+            b[2] -= b[0]
+            b[3] -= b[1]
+        b = correct_bbox(image.shape[:-1][::-1], b)
         ax.add_patch(patches.Rectangle((b[0], b[1]), b[2], b[3], linewidth=1, facecolor='none', edgecolor='r'))
     ax.set_axis_off()
     return f
@@ -122,3 +130,22 @@ def print_model(ckpt_path, tensor_name=None, all_tensors=False, all_tensor_names
                                           tensor_name=tensor_name,
                                           all_tensors=all_tensors,
                                           all_tensor_names=all_tensor_names)
+
+
+
+
+def _anchor(seed, scale=[3, 5, 9], ratio=[0.5, 1, 2]):
+    n_scale = len(scale)
+    n_ratio = len(ratio)
+    k = int(n_scale * n_ratio)
+    boxes = [None] * k
+    for i, s in enumerate(scale):
+        for j, r in enumerate(ratio):
+            # factor =
+            boxes[int(i * n_ratio + j)] = [seed]
+
+
+
+
+
+
