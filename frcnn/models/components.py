@@ -110,6 +110,7 @@ class VGG16():
         for l in self.layers_names:
             scope, name = l.split('/')
             x = self.layers[scope][name](x)
+            logger.warning(l)
             if l == output_layer_name:
                 break
         return x
@@ -126,20 +127,25 @@ class ResNet():
 
 if __name__ == '__main__':
     from frcnn.configs.hparams import hparams
-    placeholder = tf.placeholder(tf.float32, (None, None, None, 3))
-    vgg = VGG16()
-    output = vgg(placeholder, 'stack_conv_5/conv_3')
-    print(output)
-    feeder = VOCFeeder(hparams.train_preproc)
     # print(data[0].shape)
     import matplotlib.pyplot as plt
+    feeder = VOCFeeder(hparams.train_preproc)
+    with tf.Session() as sess:
+        placeholder = tf.placeholder(tf.float32, (None, None, None, 3))
+        vgg = VGG16()
+        output = vgg(placeholder, 'stack_conv_5/conv_3')
+        vgg.load('../pretrain/vgg_16.ckpt', sess)
+        for i in range(1):
+            data = feeder._prepare_batch(1)
+            img = data[0]
+            print(img.shape)
+            out = sess.run([output], feed_dict={placeholder:img})
+            print(out[0].shape)
+            # img = data[0][0]
+            # box = data[2]
+            # filename = data[-1][0]0
+            # print(img.shape, box)
+            # print(filename)
+            # annotate_image(img, box, True, True)
 
-    for i in range(10):
-        data = feeder._prepare_batch(1)
-        img = data[0][0]
-        box = data[2]
-        filename = data[-1][0]
-        print(img.shape, box)
-        print(filename)
-        annotate_image(img, box, True, True)
-        plt.show()
+            # plt.show()

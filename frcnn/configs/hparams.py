@@ -51,7 +51,8 @@ if hparams.dataset.name == 'ILSVRC':
     hparams.valid_preproc.ImageSets = hparams.dataset.ImageSets + '/CLS-LOC/val'
     hparams.valid_preproc.metadata = hparams.dataset.base_dir + 'val_metadata'
 
-
+hparams.frcnn = EasyDict()
+# hparams.frcnn.input_shape =
 
 
 
